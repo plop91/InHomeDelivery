@@ -1,5 +1,7 @@
 devel/
 logs/
+log/
+install/
 build/
 bin/
 lib/
@@ -49,3 +51,6 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+.idea/
+*.code-workspace
