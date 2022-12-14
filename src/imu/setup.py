@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'motors'
+package_name = 'imu'
 
 setup(
     name=package_name,
@@ -15,12 +15,12 @@ setup(
     zip_safe=True,
     maintainer='ian',
     maintainer_email='ian@sodersjerna.com',
-    description='Motor driver for InHomeDelivery Robot',
+    description='IMU for InHomeDelivery Robot',
     license='GNU3',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'motors = motors.motors_node:main'
+            'imu = imu.imu_node:main',
         ],
     },
 )

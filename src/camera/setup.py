@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'img_publisher = camera.webcam_pub:main',
-            'img_subscriber = camera.webcam_sub:main',
+            'camera_node = camera.camera_node:main',
+            'sub = camera.camera_sub_node:main',
         ],
     },
 )

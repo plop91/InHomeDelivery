@@ -1,3 +1,5 @@
+import time
+
 from inputs import get_gamepad
 import math
 import threading
@@ -30,14 +32,14 @@ class XboxController(object):
         self.UpDPad = 0
         self.DownDPad = 0
 
-        # self._monitor_thread = threading.Thread(target=self._monitor_controller, args=())
+        self._monitor_thread = threading.Thread(target=self.monitor_controller, args=())
         # self._monitor_thread.daemon = True
-        # self._monitor_thread.start()
+        self._monitor_thread.start()
 
-    def read(self):  # return the buttons/triggers that you care about in this methode
-        x = self.LeftJoystickX
-        y = self.LeftJoystickY
-        z = self.RightJoystickX
+    def read(self):
+        x = float(self.LeftJoystickX)
+        y = float(self.LeftJoystickY)
+        z = float(self.RightJoystickX)
         return x, y, z
 
     def monitor_controller(self):
@@ -89,4 +91,6 @@ class XboxController(object):
 if __name__ == '__main__':
     joy = XboxController()
     while True:
+        joy.monitor_controller()
         print(joy.read())
+        time.sleep(1)

@@ -1,60 +1,81 @@
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
-from sensor_msgs.msg import Image
+from geometry_msgs.msg import Twist
 
 from .xbox_controller import XboxController
 
 
 class Controller(Node):
 
-    def __init__(self, update_interval=0.2):
-        super().__init__('Controller')
+    def __init__(self, update_interval=0.01):
+        super().__init__('Controller_Node')
 
+        # ROS parameters
+        self.declare_parameter('dead_zone', 5)
+
+        # Variables
         self.x = 0
         self.y = 0
         self.t = 0
 
-        self.xbox_controller = XboxController()
-        self.xbox_timer = self.create_timer(0.1, self.xbox_controller.monitor_controller())
+        self.dead_zone = self.get_parameter('dead_zone').get_parameter_value().value
 
-        self.X_publisher_ = self.create_publisher(String, 'CMD_X', 10)
-        self.Y_publisher_ = self.create_publisher(String, 'CMD_Y', 10)
-        self.T_publisher_ = self.create_publisher(String, 'CMD_T', 10)
-        self.cmd_vel_pub_timer = self.create_timer(update_interval, self.publish_cmd_vel)
+        # Controller object
+        self.xbox_controller = XboxController()
+
+        # ROS publisher
+        self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+
+        # ROS timer
+        self.cmd_vel_pub_timer = self.create_timer(update_interval, self.update)
+
+    def update(self):
+        # self.xbox_controller.monitor_controller()
+        self.read_controller()
+        self.publish_cmd_vel()
 
     def read_controller(self):
         x, y, z = self.xbox_controller.read()
-        self.x = int(x * 10)
-        self.y = int(y * 10)
-        self.t = int(z * 10)
+
+        tx = x * 100
+        if self.dead_zone > tx > -self.dead_zone:
+            self.x = 0.0
+        else:
+            self.x = tx
+
+        ty = y * 100
+        if self.dead_zone > ty > -self.dead_zone:
+            self.y = 0.0
+        else:
+            self.y = ty
+
+        tz = z * 100
+        if self.dead_zone > tz > -self.dead_zone:
+            self.t = 0.0
+        else:
+            self.t = tz
 
     def publish_cmd_vel(self):
-        msg = String()
-        msg.data = "x=" + str(self.x)
-        self.X_publisher_.publish(msg)
-        self.get_logger().info('Publishing x: "%s"' % msg.data)
-        msg = String()
-        msg.data = "y=" + str(self.y)
-        self.Y_publisher_.publish(msg)
-        self.get_logger().info('Publishing y: "%s"' % msg.data)
-        msg = String()
-        msg.data = "t=" + str(self.t)
-        self.T_publisher_.publish(msg)
-        self.get_logger().info('Publishing t: "%s"' % msg.data)
+        msg = Twist()
+        msg.linear.x = self.x
+        msg.linear.y = self.y
+        msg.angular.z = self.t
+        self.publisher.publish(msg)
+        self.get_logger().info(f'Publishing cmd_vel: x:{self.x:2} y:{self.y:2} z:{self.t:2}')
 
 
 def main(args=None):
+    # Initialize the rclpy library
     rclpy.init(args=args)
 
+    # Create the node
     controller = Controller()
 
     rclpy.spin(controller)
 
     # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     controller.destroy_node()
+
     rclpy.shutdown()
 
 
