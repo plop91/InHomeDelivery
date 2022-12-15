@@ -1,21 +1,25 @@
-# ROS imports
-import rclpy  # Python library for ROS 2
-from rclpy.node import Node  # Handles the creation of nodes
-from rclpy.qos import QoSProfile
+"""
+Particle filter node
+Ian Sodersjerna
+"""
+import rclpy
+from rclpy.node import Node
 from geometry_msgs.msg import PoseArray, Pose, TransformStamped, PolygonStamped, Quaternion, PoseStamped
 from nav_msgs.msg import OccupancyGrid, Odometry
 from visualization_msgs.msg import Marker, MarkerArray
-from tf2_ros import TransformException
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
-from tf2_ros import TransformBroadcaster
 
-# Other imports
 from .particle_filter import ParticleFilter
 import math
 
 
 def quaternion_from_euler(ai: float, aj: float, ak: float):
+    """
+    Convert euler coordinate to quaternion.
+    :param ai: i component of euler number
+    :param aj: j component of euler number
+    :param ak: k component of euler number
+    :return:
+    """
     temp = Quaternion()
 
     temp.x = math.sin(ai / 2) * math.cos(aj / 2) * math.cos(ak / 2) - math.cos(ai / 2) * math.sin(
@@ -36,6 +40,8 @@ def euler_from_quaternion(q):
     roll is rotation around x in radians (counterclockwise)
     pitch is rotation around y in radians (counterclockwise)
     yaw is rotation around z in radians (counterclockwise)
+    :param q: quaternion
+    :return: euler coordinates
     """
     x = q.x
     y = q.y
@@ -59,9 +65,15 @@ def euler_from_quaternion(q):
 
 
 class ParticleFilterNode(Node):
-    MAX_PARTICLES = 500
+    """
+    Particle filter node, responsible for running particle filter and publishing ROS topics
+    """
+    MAX_PARTICLES = 500  # max particles to be displayed
 
     def __init__(self):
+        """
+        Initialize particle filter node
+        """
         super().__init__('Particle_Filter_Node')
         self.nodeName = self.get_name()
         # self.target_frame = self.declare_parameter('target_frame', 'turtle1')
@@ -75,6 +87,7 @@ class ParticleFilterNode(Node):
         self.map_filepath = f
         self.particle_filter = ParticleFilter(self.map_filepath)
 
+        # ROS subscriptions
         self.pose_array_subscription = self.create_subscription(
             PoseArray,
             'marker_poses',
@@ -87,21 +100,38 @@ class ParticleFilterNode(Node):
             self.odometry_updated,
             10)
 
+        # ROS publishers
         self.occupancy_grid_publisher = self.create_publisher(OccupancyGrid, 'occupancy_grid', 10)
         self.particles_publisher = self.create_publisher(PoseArray, 'particles', 10)
         self.marker_publisher = self.create_publisher(MarkerArray, 'marker_array', 10)
         self.Robot_pose_publisher = self.create_publisher(PoseStamped, 'robot_pose', 10)
 
-        # Call update function every half a second
+        # ROS timer
         self.timer = self.create_timer(0.5, self.update)
 
     def update(self):
+        """
+        update ROS with the particle filter info
+        :return: None
+        """
+        # publish the occupancy grid
         self.publish_occupancy_grid()
+
+        # publish the marker array
         self.publish_marker_array()
+
+        # publish particle pose array
         self.publish_particle_pose_array()
+
+        # publish robot estimate
         # self.publish_robot_estimate()
 
     def run_particle_filter(self):
+        """
+        run the particle filter algorithm
+        :return: None
+        """
+
         # Obtain odometry information
         odom = self.particle_filter.compute_odometry(self.particle_filter.curr_pose)
         self.get_logger().info("odom:", odom)
@@ -136,7 +166,10 @@ class ParticleFilterNode(Node):
         # pf.curr_pose = pf.robot.pose
 
     def publish_particle_pose_array(self):
-
+        """
+        Publish the particle pose array
+        :return:
+        """
         pa = PoseArray()
         pa.header.stamp = self.get_clock().now().to_msg()
         pa.header.frame_id = 'world'
@@ -154,6 +187,10 @@ class ParticleFilterNode(Node):
         self.get_logger().info('Publishing particle Poses')
 
     def publish_robot_estimate(self):
+        """
+        publish robot estimate
+        :return: None
+        """
         p = PoseStamped()
 
         p.header.stamp = self.get_clock().now().to_msg()
@@ -169,6 +206,10 @@ class ParticleFilterNode(Node):
         self.Robot_pose_publisher.publish(p)
 
     def publish_occupancy_grid(self):
+        """
+        publish occupancy grid
+        :return: None
+        """
         og = OccupancyGrid()
 
         # configure header
@@ -203,6 +244,10 @@ class ParticleFilterNode(Node):
         self.get_logger().info('Published occupancy_grid')
 
     def publish_marker_array(self):
+        """
+        publish marker array
+        :return: None
+        """
         markers = MarkerArray()
         for m in self.particle_filter.grid.markers:
             marker = Marker()
@@ -238,6 +283,11 @@ class ParticleFilterNode(Node):
 
 
 def main(args=None):
+    """
+    Main function of the program calls to initialize ROS
+    :param args: arguments passed to the program by ROS
+    :return: exit code
+    """
     # Initialize the rclpy library
     rclpy.init(args=args)
 
@@ -255,6 +305,8 @@ def main(args=None):
     # Shutdown the ROS client library for Python
     rclpy.shutdown()
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    exit(main())

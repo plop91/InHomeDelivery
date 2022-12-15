@@ -1,12 +1,18 @@
+"""
+Generate aruco markers
+Ian Sodersjerna
+"""
 import os
 import cv2
 import numpy as np
 
 
-def generate_aruco_markers(count=10, dict_type="DICT_ARUCO_ORIGINAL"):
-    # dict of dicts for arco
-
-
+def generate_aruco_markers(count=10):
+    """
+    Function to generate aruco markers that you can print
+    :param count: number of markers to be generated (each marker type has a max number of possible markers)
+    :return: None
+    """
     # dir the images will be sent in
     image_dir = os.path.join("data", "markers")
 

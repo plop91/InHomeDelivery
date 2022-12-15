@@ -1,16 +1,25 @@
-import time
+"""
+Xbox controller
+Ian Sodersjerna
+"""
 
 from inputs import get_gamepad
 import math
+import time
 import threading
 
 
 class XboxController(object):
+    """
+    Xbox controller object.
+    """
     MAX_TRIG_VAL = math.pow(2, 8)
     MAX_JOY_VAL = math.pow(2, 15)
 
     def __init__(self):
-
+        """
+        Initialize an xbox controller with all of its different buttons
+        """
         self.LeftJoystickY = 0
         self.LeftJoystickX = 0
         self.RightJoystickY = 0
@@ -37,12 +46,20 @@ class XboxController(object):
         self._monitor_thread.start()
 
     def read(self):
+        """
+        Read the xbox controller.
+        :return: x, y, z values from the xbox controller.
+        """
         x = float(self.LeftJoystickX)
         y = float(self.LeftJoystickY)
         z = float(self.RightJoystickX)
         return x, y, z
 
     def monitor_controller(self):
+        """
+        Reads all the raw values from the controller.
+        :return: None
+        """
         while True:
             events = get_gamepad()
             for event in events:
@@ -89,6 +106,9 @@ class XboxController(object):
 
 
 if __name__ == '__main__':
+    """
+    Test program.
+    """
     joy = XboxController()
     while True:
         joy.monitor_controller()

@@ -1,5 +1,7 @@
-import time
-
+"""
+motors node
+Ian Sodersjerna
+"""
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -13,8 +15,14 @@ from .motor import Motor
 
 
 class Motors(Node):
+    """
+    Motor node used to interface ROS with the motors
+    """
 
     def __init__(self):
+        """
+        Initialize the motor node
+        """
         super().__init__('Motors_Node')
 
         # ROS parameters
@@ -63,16 +71,14 @@ class Motors(Node):
         self.back_left_motor = Motor(self.gpio, 23, 22, 4, 21, 27)
         self.back_right_motor = Motor(self.gpio, 13, 26, 11, 9, 10)
 
-        # Subscribe to CMD velocities
+        # ROS subscriptions
         self.cmd_vel_subscription = self.create_subscription(
             Twist,
             'cmd_vel',
             self.cmd_vel_callback,
             10)
 
-        self.update_interval = float(self.get_parameter('update_interval').value)
-        self.update_timer = self.create_timer(self.update_interval, self.update)
-
+        # ROS services
         self.motors_enabled = True
         self.disable_srv = self.create_service(Empty, 'disable_motors', self.disable_motors)
         self.enable_srv = self.create_service(Empty, 'enable_motors', self.enable_motors)
@@ -89,7 +95,16 @@ class Motors(Node):
         self.motors_calibrated = False
         self.calibration_srv = self.create_service(Empty, 'calibrate_motors', self.calibrate_motors)
 
+        # ROS timer
+        self.update_interval = float(self.get_parameter('update_interval').value)
+        self.update_timer = self.create_timer(self.update_interval, self.update)
+
     def cmd_vel_callback(self, msg):
+        """
+        callback to read cmd_vel updates
+        :param msg: message containing cmd vel
+        :return: None
+        """
         self.command_vel_x = msg.linear.y
         self.command_vel_y = msg.linear.x
         self.command_vel_t = msg.angular.z
@@ -97,6 +112,10 @@ class Motors(Node):
                                f'y:{self.command_vel_y:2} z:{self.command_vel_t:2}')
 
     def update(self):
+        """
+        update the motors
+        :return: None
+        """
         # input type
         mix_type = self.get_parameter('mix_type').get_parameter_value().string_value
         if mix_type == "mix":
@@ -126,12 +145,20 @@ class Motors(Node):
         self.update_motors()
 
     def update_motors(self):
+        """
+        call the motors update methods
+        :return: None
+        """
         self.front_left_motor.update()
         self.front_right_motor.update()
         self.back_left_motor.update()
         self.back_right_motor.update()
 
     def mix_inputs(self):
+        """
+        Mix motor inputs from the controller
+        :return: None
+        """
         sig = 0
         front_left_wheel_speed = 0
         front_right_wheel_speed = 0
@@ -171,6 +198,10 @@ class Motors(Node):
         self.back_right_wheel_speed = back_right_wheel_speed
 
     def max_inputs(self):
+        """
+        only use the command velocity that is the highest
+        :return: None
+        """
 
         if self.command_vel_x > self.command_vel_y and self.command_vel_x > self.command_vel_t:
             self.front_left_wheel_speed += self.command_vel_x
@@ -190,6 +221,10 @@ class Motors(Node):
             self.back_right_wheel_speed -= self.command_vel_t
 
     def set_motor_speed(self):
+        """
+        Set the motor speeds
+        :return: None
+        """
         self.set_parameters([Parameter('command_type', Parameter.Type.STRING, "speed")])
         if self.motors_enabled:
             self.get_logger().info(f'updating motor speeds fl:{int(self.front_left_wheel_speed)} fr:'
@@ -207,6 +242,10 @@ class Motors(Node):
             self.back_right_motor.set_speed(0)
 
     def set_motor_position(self):
+        """
+        Set the motor positions
+        :return: None
+        """
         self.set_parameters([Parameter('command_type', Parameter.Type.STRING, "pos")])
         self.get_logger().info(f'updating motor positions fl:{self.front_left_wheel_posi} fr:'
                                f'{self.front_right_wheel_posi} bl:{self.back_left_wheel_posi} '
@@ -217,6 +256,10 @@ class Motors(Node):
         self.back_right_motor.set_position(self.back_right_wheel_posi)
 
     def set_motor_velocity(self):
+        """
+        Set the motor velocity
+        :return:
+        """
         self.set_parameters([Parameter('command_type', Parameter.Type.STRING, "vel")])
         if self.motors_enabled:
             self.get_logger().info(f'updating motor velocities fl:{self.front_left_wheel_speed} fr:'
@@ -234,6 +277,12 @@ class Motors(Node):
             self.back_right_motor.set_speed(0)
 
     def calibrate_motors(self, request, response):
+        """
+        Calibrate the motors
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info("Motor Calibration started, each motor will move slightly")
         self.front_left_motor.calibrate()
         self.front_right_motor.calibrate()
@@ -244,14 +293,32 @@ class Motors(Node):
         return response
 
     def disable_motors(self, request, response):
+        """
+        disable motors
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.motors_enabled = False
         return response
 
     def enable_motors(self, request, response):
+        """
+        enable motors
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.motors_enabled = True
         return response
 
     def drive_forward(self, request, response):
+        """
+        drive the robot forward
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info(f"drive forward {request.x}")
 
         # TODO: determine scaling factor from wheel pos to distance
@@ -272,6 +339,12 @@ class Motors(Node):
         return response
 
     def drive_backward(self, request, response):
+        """
+        drive the robot backward
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info(f"drive backward {request.x}")
 
         # TODO: determine scaling factor from wheel pos to distance
@@ -292,6 +365,12 @@ class Motors(Node):
         return response
 
     def drive_left(self, request, response):
+        """
+        drive the robot left
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info(f"drive left {request.x}")
 
         # TODO: determine scaling factor from wheel pos to distance
@@ -312,6 +391,12 @@ class Motors(Node):
         return response
 
     def drive_right(self, request, response):
+        """
+        drive the robot right
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info(f"drive right {request.x}")
 
         # TODO: determine scaling factor from wheel pos to distance
@@ -332,6 +417,12 @@ class Motors(Node):
         return response
 
     def turn_cw(self, request, response):
+        """
+        turn the robot clockwise
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info(f"drive cw {request.x}")
 
         # TODO: determine scaling factor from wheel pos to degrees
@@ -352,6 +443,12 @@ class Motors(Node):
         return response
 
     def turn_ccw(self, request, response):
+        """
+        turn the robot counter clockwise
+        :param request: request
+        :param response: response
+        :return: response
+        """
         self.get_logger().info(f"drive ccw {request.x}")
 
         # TODO: determine scaling factor from wheel pos to degrees
@@ -372,6 +469,10 @@ class Motors(Node):
         return response
 
     def stop_motors(self):
+        """
+        stop the robots motors
+        :return: None
+        """
         self.front_left_motor.set_speed(0)
         self.front_right_motor.set_speed(0)
         self.back_left_motor.set_speed(0)
@@ -379,6 +480,11 @@ class Motors(Node):
         self.update_motors()
 
     def set_pwm_freq(self, freq):
+        """
+        set the pwm frequency of the motors
+        :param freq: frequency to set the motors to
+        :return: None
+        """
         self.front_left_motor.set_pwm_freq(freq)
         self.front_right_motor.set_pwm_freq(freq)
         self.back_left_motor.set_pwm_freq(freq)
@@ -386,19 +492,23 @@ class Motors(Node):
 
 
 def main(args=None):
+    """
+    Main function of the program calls to initialize ROS
+    :param args: arguments passed to the program by ROS
+    :return: exit code
+    """
     rclpy.init(args=args)
 
     motors = Motors()
 
     rclpy.spin(motors)
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-
     motors.destroy_node()
+
     rclpy.shutdown()
+
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    exit(main())

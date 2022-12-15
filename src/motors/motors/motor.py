@@ -1,3 +1,7 @@
+"""
+Motor
+Ian Sodersjerna
+"""
 import lgpio
 import time
 from numpy import interp
@@ -7,7 +11,6 @@ from simple_pid import PID
 class Motor:
     """
     Represents a motor w/encoder connected via a H-bridge motor driver.
-
     """
     FREQ = 500
 

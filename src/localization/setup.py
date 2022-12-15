@@ -25,8 +25,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pf = localization.particle_filter_node:main',
-            'state_publisher = localization.state_publisher:main'
+            'pf = localization.particle_filter_node:main'
         ],
     },
 )

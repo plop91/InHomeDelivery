@@ -1,3 +1,7 @@
+"""
+Particle filter
+Ian Sodersjerna
+"""
 import random
 import math
 import json
@@ -11,6 +15,10 @@ from shapely.geometry.polygon import Polygon
 
 
 class ParticleFilter:
+    """
+    Patricle filter, represents a particle filter used to locate a robot using the robots odometry and poses of
+    markers in the enviorment.
+    """
     # odometry Gaussian noise model
     ODOM_TRANS_SIGMA = 0.01  # translational err in inch (grid unit)
     ODOM_HEAD_SIGMA = 0.5  # rotational err in deg
@@ -26,11 +34,18 @@ class ParticleFilter:
     alpha3 = 0.005
     alpha4 = 0.005
 
-    class CozGrid:
+    class OccupancyGrid:
+        """
+        Represents an occupancy grid which is a popular map type in robotics
+        """
 
         min_occupancy = 50
 
         def __init__(self, filepath: str):
+            """
+            Initialize an occupancy grid object.
+            :param filepath: filepath to an existing occupancy grid file
+            """
             self.filename = filepath
 
             self.map_time = time.perf_counter_ns()
@@ -104,12 +119,17 @@ class ParticleFilter:
                     return x, y
 
     class Particle(object):
-
-        # x = "X coordinate in world frame"
-        # y = "Y coordinate in world frame"
-        # h = "Heading angle in world frame in degree. h = 0 when robot's points to positive X"
+        """
+        Particle object
+        """
 
         def __init__(self, x, y, heading=None):
+            """
+            Initialize particle object
+            :param x: x position of particle
+            :param y: y position of particle
+            :param heading: heading of particle
+            """
             if heading is None:
                 heading = random.uniform(0, 360)
             self.x = x
@@ -117,19 +137,36 @@ class ParticleFilter:
             self.h = heading
 
         def __repr__(self):
+            """
+            String representation of particle
+            :return: string representation of particle
+            """
             return "(x = %f, y = %f, heading = %f deg)" % (self.x, self.y, self.h)
 
         @property
         def xy(self):
+            """
+            Property that returns x and y location
+            :return: x and y location
+            """
             return self.x, self.y
 
         @property
         def xyh(self):
+            """
+            Property that returns x and y location and heading
+            :return: x, y location and heading
+            """
             return self.x, self.y, self.h
 
         @classmethod
-        # create some random particles
         def create_random(cls, count, grid):
+            """
+            Create random particle in the world
+            :param count: number of particles to create
+            :param grid: grid to create the particles in
+            :return: the list of new particles
+            """
             return [cls(*grid.random_free_place()) for _ in range(0, count)]
 
         def move(self, rot1, trans, rot2):
@@ -179,6 +216,13 @@ class ParticleFilter:
 
         @staticmethod
         def parse_marker_info(col, row, heading_char):
+            """
+            TODO: this method is no longer needed and should be removed
+            :param col:
+            :param row:
+            :param heading_char:
+            :return:
+            """
             c = None
             r = None
             heading = None
@@ -203,20 +247,40 @@ class ParticleFilter:
             return c, r, heading
 
     class Robot(Particle):
+        """
+        Robot class  in the particle filter, inherits from particle
+        """
 
         def __init__(self, x, y, h):
+            """
+            Initialize robot
+            :param x: x position of the robot
+            :param y: y position of the robot
+            :param h: heading of the robot
+            """
             super(ParticleFilter.Robot, self).__init__(x, y, h)
 
         def __repr__(self):
+            """
+            string representation of the robot
+            :return: string representation of the robot
+            """
             return "(x = %f, y = %f, heading = %f deg)" % (self.x, self.y, self.h)
 
         @property
         def pose(self):
+            """
+            Property that returns pose of the robot
+            :return: the pose of the robot
+            """
             return [self.x, self.y, self.h]
 
-        # return a random robot heading angle
         @staticmethod
         def chose_random_heading():
+            """
+            return a random robot heading angle
+            :return: random robot heading angle
+            """
             return random.uniform(0, 360)
 
         def check_collision(self, rot1, trans, rot2, grid):
@@ -238,8 +302,13 @@ class ParticleFilter:
             return True
 
     def __init__(self, map_filename, particle_count=5000):
+        """
+        Initialize particle filter
+        :param map_filename: filename for the map file
+        :param particle_count: number of particles in the particle filter
+        """
         self.PARTICLE_COUNT = particle_count
-        self.grid = self.CozGrid(map_filename)
+        self.grid = self.OccupancyGrid(map_filename)
         self.particles = self.Particle.create_random(self.PARTICLE_COUNT, self.grid)
         # TODO: check this robot thing here
         x, y = self.grid.random_free_place()
@@ -248,6 +317,12 @@ class ParticleFilter:
         self.curr_pose = None
 
     def update(self, odom, r_marker_list):
+        """
+        update the particle filter
+        :param odom: odometry of the robot over the last time step
+        :param r_marker_list: marker list from the current frame
+        :return: current estimated pose and confidence
+        """
         # ---------- Motion model update ----------
         self.motion_update(odom)
 
@@ -257,6 +332,7 @@ class ParticleFilter:
         # ---------- Show current state ----------
         # Try to find current best estimate for display
         m_x, m_y, m_h, m_confident = self.compute_mean_pose()
+
         return m_x, m_y, m_h, m_confident
 
     def motion_update(self, odom):
@@ -428,6 +504,11 @@ class ParticleFilter:
         return m_x, m_y, m_h, m_count > len(self.particles) * 0.95
 
     def compute_odometry(self, cvt_inch=True):
+        """
+        Compute the robot odometry
+        :param cvt_inch: convert inch
+        :return: odometry information [[last],[curr]]
+        """
         last_x, last_y, last_h = self.last_pose.position.x, self.last_pose.position.y, \
                                  self.last_pose.rotation.angle_z.degrees
         curr_x, curr_y, curr_h = self.curr_pose.position.x, self.curr_pose.position.y, self.curr_pose.rotation.angle_z.degrees
@@ -440,10 +521,22 @@ class ParticleFilter:
 
     @staticmethod
     def sample(x):
+        """
+        Sample from a random gaussian
+        :param x: x value for gaussian
+        :return: random value
+        """
         return random.gauss(0, x)
 
     @staticmethod
     def norm_pdf(x, mean, sd):
+        """
+        normal continuous random variable
+        :param x:
+        :param mean:
+        :param sd:
+        :return:
+        """
         var = float(sd) ** 2
         denom = (2 * math.pi * var) ** .5
         num = math.exp(-(float(x) - float(mean)) ** 2 / (2 * var))
@@ -451,10 +544,25 @@ class ParticleFilter:
 
     @staticmethod
     def grid_distance(x1, y1, x2, y2):
+        """
+        straight line distance
+        :param x1: x pos 1
+        :param y1: y pos 1
+        :param x2: x pos 2
+        :param y2: y pos 2
+        :return: distance between points
+        """
         return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
     @staticmethod
     def rotate_point(x, y, heading_deg):
+        """
+        rotate point
+        :param x:
+        :param y:
+        :param heading_deg:
+        :return:
+        """
         c = math.cos(math.radians(heading_deg))
         s = math.sin(math.radians(heading_deg))
         xr = x * c + y * -s
@@ -463,6 +571,12 @@ class ParticleFilter:
 
 
 def main(particle_filter, robot):
+    """
+    Test porgram
+    :param particle_filter: particle filter
+    :param robot: robot
+    :return: None
+    """
     particle_filter.last_pose = robot.pose
     particle_filter.curr_pose = particle_filter.last_pose
     while True:

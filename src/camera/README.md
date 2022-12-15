@@ -32,8 +32,20 @@ Generate calibration matrices used by aruco to  determine poses of markers.
 python camera_calibration.py
 # output -> calibration_matrix.npy and distortion_coefficients.npy
 ```
+5. Build and run nodes
+From the workspace root(top level dir for most projects) run the following commands.
+```shell
+# First source your work space, this can be different per environment so utilize the proper call for your environment.
 
-## Goal
+# Then run the following to build the module and its requirements
+colcon build --packages-select camera delivery_robot_interfaces
 
+# on the robot run
+ros2 run camera camera_node
 
-## Description
+# on your PC run to view the raw images
+ros2 run camera sub
+--or--
+# to visualize the marker and see both raw and marked up images.
+rviz2 # additional configuration is needed when rviz  opens
+```

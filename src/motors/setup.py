@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'lgpio', 'simple_pid', 'numpy'],
     zip_safe=True,
     maintainer='ian',
     maintainer_email='ian@sodersjerna.com',

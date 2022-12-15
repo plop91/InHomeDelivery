@@ -1,8 +1,16 @@
+"""
+Generate calibration board
+Ian Sodersjerna
+"""
 import cv2
 import os
 
 
 def generate_charuco_board():
+    """
+    Generate a charuco board
+    :return: None
+    """
 
     # dir the images will be sent in
     image_dir = os.path.join("data", "boards")

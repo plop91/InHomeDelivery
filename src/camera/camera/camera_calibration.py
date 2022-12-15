@@ -1,3 +1,7 @@
+"""
+Camera Calibration
+Ian Sodersjerna
+"""
 import numpy as np
 import cv2
 import os
@@ -8,8 +12,8 @@ def read_chessboards(images):
     Charuco base pose estimation.
     """
     print("POSE ESTIMATION STARTS:")
-    allCorners = []
-    allIds = []
+    all_corners = []
+    all_ids = []
     decimator = 0
     # SUB PIXEL CORNER DETECTION CRITERION
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.00001)
@@ -30,13 +34,13 @@ def read_chessboards(images):
                                      criteria=criteria)
                 res2 = cv2.aruco.interpolateCornersCharuco(corners, ids, gray, board)
                 if res2[1] is not None and res2[2] is not None and len(res2[1]) > 3 and decimator % 1 == 0:
-                    allCorners.append(res2[1])
-                    allIds.append(res2[2])
+                    all_corners.append(res2[1])
+                    all_ids.append(res2[2])
 
             decimator += 1
 
         imsize = gray.shape
-        return allCorners, allIds, imsize
+        return all_corners, all_ids, imsize
     return None, None, None
 
 
@@ -46,11 +50,11 @@ def calibrate_camera(all_corners, all_ids, im_size):
     """
     print("CAMERA CALIBRATION")
 
-    cameraMatrixInit = np.array([[1000., 0., im_size[0] / 2.],
+    camera_matrix_init = np.array([[1000., 0., im_size[0] / 2.],
                                  [0., 1000., im_size[1] / 2.],
                                  [0., 0., 1.]])
 
-    distCoeffsInit = np.zeros((5, 1))
+    dist_coeffs_init = np.zeros((5, 1))
     flags = (cv2.CALIB_USE_INTRINSIC_GUESS + cv2.CALIB_RATIONAL_MODEL + cv2.CALIB_FIX_ASPECT_RATIO)
     (ret, camera_matrix, distortion_coefficients0,
      rotation_vectors, translation_vectors,
@@ -60,8 +64,8 @@ def calibrate_camera(all_corners, all_ids, im_size):
         charucoIds=all_ids,
         board=board,
         imageSize=im_size,
-        cameraMatrix=cameraMatrixInit,
-        distCoeffs=distCoeffsInit,
+        cameraMatrix=camera_matrix_init,
+        distCoeffs=dist_coeffs_init,
         flags=flags,
         criteria=(cv2.TERM_CRITERIA_EPS & cv2.TERM_CRITERIA_COUNT, 10000, 1e-9))
 
@@ -114,12 +118,14 @@ if __name__ == "__main__":
         if f.endswith(".png"):
             image_paths.append(os.path.join(args.input_dir, f))
 
-    allCorners, allIds, imsize = read_chessboards(image_paths)
+    corners, ids, imsize = read_chessboards(image_paths)
 
-    ret, mtx, dist, rvecs, tvecs = calibrate_camera(allCorners, allIds, imsize)
+    ret, mtx, dist, rvecs, tvecs = calibrate_camera(corners, ids, imsize)
 
     print(mtx)
     print(dist)
 
     np.save(os.path.join("data", "calibration_matrix"), mtx)
     np.save(os.path.join("data", "distortion_coefficients"), dist)
+
+    exit(0)

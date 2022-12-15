@@ -1,3 +1,7 @@
+"""
+Controller Node
+Ian Sodersjerna
+"""
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -6,8 +10,16 @@ from .xbox_controller import XboxController
 
 
 class Controller(Node):
+    """
+    Controller Node, this node publishes the state of the controller as a twist, this can be easily expanded to
+    include additional published topics for buttons or combinations of inputs.
+    """
 
     def __init__(self, update_interval=0.01):
+        """
+        Initialize the controller node
+        :param update_interval: How ofter will controller update be called.
+        """
         super().__init__('Controller_Node')
 
         # ROS parameters
@@ -30,11 +42,21 @@ class Controller(Node):
         self.cmd_vel_pub_timer = self.create_timer(update_interval, self.update)
 
     def update(self):
-        # self.xbox_controller.monitor_controller()
+        """
+        Update the controller node
+        :return: None
+        """
+        # update controller values.
         self.read_controller()
+
+        # publish controller values as command velocity
         self.publish_cmd_vel()
 
     def read_controller(self):
+        """
+        Read the controller and check if the values are outside the dead-zone.
+        :return: None
+        """
         x, y, z = self.xbox_controller.read()
 
         tx = x * 100
@@ -56,15 +78,31 @@ class Controller(Node):
             self.t = tz
 
     def publish_cmd_vel(self):
+        """
+        Publish command velocities as a twist.
+        :return: None
+        """
+        # create twist object
         msg = Twist()
+
+        # assign values.
         msg.linear.x = self.x
         msg.linear.y = self.y
         msg.angular.z = self.t
+
+        # publish command velocities
         self.publisher.publish(msg)
+
+        # log command velocities
         self.get_logger().info(f'Publishing cmd_vel: x:{self.x:2} y:{self.y:2} z:{self.t:2}')
 
 
 def main(args=None):
+    """
+    Main function of the program, initializes ROS.
+    :param args: arguments passed to the program by ROS
+    :return: exit code
+    """
     # Initialize the rclpy library
     rclpy.init(args=args)
 
@@ -78,6 +116,8 @@ def main(args=None):
 
     rclpy.shutdown()
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    exit(main())

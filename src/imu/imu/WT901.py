@@ -1,10 +1,21 @@
+"""
+WT901
+Ian Sodersjerna
+"""
 import time
 import lgpio
 from struct import unpack
 
 
-class JY901:
+class WT901:
+    """
+    JY901 represents a driver for the WT901 High-Accuracy Accelerometer, Gyroscope, Magnetometer Module.
+    """
+
     class STime:
+        """
+        Class that represents time from the WT901
+        """
         ucYear = ''
         ucMonth = ''
         ucDay = ''
@@ -14,75 +25,92 @@ class JY901:
         usMiliSecond = 0
 
     class SAcc:
+        """
+        Class that represents linear acceleration from the WT901
+        """
         ax = 0
         ay = 0
         az = 0
         t = 0
 
     class SGyro:
+        """
+        Class that represents gyroscopic velocity from the WT901
+        """
         gx = 0
         gy = 0
         gz = 0
         t = 0
 
     class SAngle:
+        """
+        Class that represents kalman filtered angle from the WT901
+        """
         ax = 0
         ay = 0
         az = 0
         t = 0
 
     class SMag:
+        """
+        Class that represents magnetometer readings from the WT901
+        """
         mx = 0
         my = 0
         mz = 0
         t = 0
 
-    class SDStatus:
-        Dstatus = []
-
-    class SPress:
-        lPressure = 0
-        lAltitude = 0
-
-    class SLonLat:
-        lLon = 0
-        lLat = 0
-
-    class SGPSV:
-        sGPSHeight = 0
-        sGPSYaw = 0
-        lGPSVelocity = 0
-
     def __init__(self, addr=0x50):
+        """
+        Initialize a IMU object
+        :param addr: address of the IMU on the i2s buss
+        """
+        # save the address then open communications with the device
         self.uc_dev_addr = addr
         self.iic_handle = lgpio.i2c_open(1, self.uc_dev_addr)
 
+        # IMU raw variables
         self.stcTime = self.STime
         self.stcAcc = self.SAcc
         self.stcGyro = self.SGyro
         self.stcAngle = self.SAngle
         self.stcMag = self.SMag
-        self.stcDStatus = self.SDStatus
-        self.stcPress = self.SPress
-        self.stcLonLat = self.SLonLat
-        self.stcGPSV = self.SGPSV
 
+        # IMU estimated positions
         self.x_pos = 0.0
         self.y_pos = 0.0
         self.z_pos = 0.0
 
     def update(self):
+        """
+        Update the imu
+        :return: None
+        """
+        # update the acceleration
         self.get_acc()
+
+        # update the gyroscope
         self.get_gyro()
+
+        # accumulate
+        # TODO: determine a better method than just accumulating
         self.accumulate()
 
     def accumulate(self):
+        """
+        accumulate the acceleration
+        :return:
+        """
         self.x_pos += self.stcAcc.ax
         self.y_pos += self.stcAcc.ay
         self.z_pos += self.stcGyro.gz
         print(f"Estimations x:{self.x_pos} y:{self.y_pos} z:{self.z_pos}")
 
     def get_time(self):
+        """
+        Get the time from the IMU
+        :return: None
+        """
         lgpio.i2c_write_device(self.iic_handle, [0x30])
         (count, data) = lgpio.i2c_read_device(self.iic_handle, 8)
         print(unpack('<BBBBBBH', data))
@@ -96,6 +124,10 @@ class JY901:
         # print(f"hour: {self.stcTime.ucHour} minute: {self.stcTime.ucMinute} second: {self.stcTime.ucSecond}")
 
     def get_acc(self):
+        """
+        Get the acceleration values from the IMU
+        :return: None
+        """
         lgpio.i2c_write_device(self.iic_handle, [0x34])
         (count, data) = lgpio.i2c_read_device(self.iic_handle, 6)
         temp = unpack('<hhh', data)
@@ -105,6 +137,10 @@ class JY901:
         # print(f"acc x: {self.stcAcc.ax} y: {self.stcAcc.ay} z: {self.stcAcc.az}")
 
     def get_gyro(self):
+        """
+        Get the gyroscope values from the IMU
+        :return: None
+        """
         lgpio.i2c_write_device(self.iic_handle, [0x37])
         (count, data) = lgpio.i2c_read_device(self.iic_handle, 6)
         temp = unpack('<hhh', data)
@@ -114,6 +150,10 @@ class JY901:
         # print(f"gyro x: {self.stcGyro.gx} y: {self.stcGyro.gy} z: {self.stcGyro.gz}")
 
     def get_angle(self):
+        """
+        Get the angular values from the IMU
+        :return: None
+        """
         lgpio.i2c_write_device(self.iic_handle, [0x3d])
         (count, data) = lgpio.i2c_read_device(self.iic_handle, 6)
         temp = unpack('<hhh', data)
@@ -123,6 +163,10 @@ class JY901:
         # print(f"angle x: {self.stcAngle.ax} y: {self.stcAngle.ay} z: {self.stcAngle.az}")
 
     def get_mag(self):
+        """
+        Get the magnetometer values from the IMU
+        :return: None
+        """
         lgpio.i2c_write_device(self.iic_handle, [0x3a])
         (count, data) = lgpio.i2c_read_device(self.iic_handle, 6)
         temp = unpack('<hhh', data)
@@ -133,7 +177,7 @@ class JY901:
 
 
 if __name__ == "__main__":
-    imu = JY901()
+    imu = WT901()
     while True:
         # imu.get_time()
         imu.get_acc()

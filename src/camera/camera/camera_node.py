@@ -1,4 +1,7 @@
-import time
+"""
+Camera Node
+Ian Sodersjerna
+"""
 
 import rclpy
 from rclpy.node import Node
@@ -10,6 +13,7 @@ from std_srvs.srv import Empty
 import cv2
 import numpy as np
 import math
+import time
 
 aruco_dict = {
     "DICT_4X4_50": cv2.aruco.DICT_4X4_50,
@@ -37,6 +41,13 @@ aruco_dict = {
 
 
 def quaternion_from_euler(ai: float, aj: float, ak: float):
+    """
+    Convert euler coordinate to quaternion.
+    :param ai: i component of euler number
+    :param aj: j component of euler number
+    :param ak: k component of euler number
+    :return:
+    """
     roll = ai
     pitch = aj
     yaw = ak
@@ -54,6 +65,9 @@ def quaternion_from_euler(ai: float, aj: float, ak: float):
 
 
 class CameraNode(Node):
+    """
+    The camera node is responsible for publishing camera images as well as marker transforms.
+    """
 
     def __init__(self, calibration_matrix_path, distortion_matrix_path, dict_type: str = "DICT_ARUCO_ORIGINAL"):
         """
@@ -125,8 +139,12 @@ class CameraNode(Node):
         Update function, reads an image, then publishes it, then estimates poses of markers in image
         :return: None
         """
+        # start timing
         t1 = time.perf_counter()
+
+        # get a frame from the camera
         ret, frame = self.cap.read()
+
         # if a frame is present
         if ret:
             if self.publishing_raw_image:
@@ -199,14 +217,18 @@ class CameraNode(Node):
                 # Draw Axis
                 cv2.aruco.drawAxis(frame, self.calibration_matrix, self.distortion_coefficients, rvec, tvec, 0.01)
 
-        print("marker poses unsorted:", marker_poses)
+        # print("marker poses unsorted:", marker_poses)
         marker_poses.sort(key=lambda x: x[3])
-        print("marker poses sorted:", marker_poses)
+        # print("marker poses sorted:", marker_poses)
         self.marker_poses = marker_poses
 
         return frame
 
     def publish_poses(self):
+        """
+        Publishes poses of markers in image.
+        :return: None
+        """
         self.get_logger().info('Publishing marker poses')
 
         pa = PoseArray()
@@ -243,31 +265,73 @@ class CameraNode(Node):
         self.pose_publisher.publish(pa)
 
     def enable_raw_img_pub(self, request, response):
+        """
+        Service callback to enable raw image publishing.
+        :param request: request message
+        :param response: response message
+        :return: response to the service call.
+        """
         self.publishing_raw_image = True
         return response
 
     def disable_raw_img_pub(self, request, response):
+        """
+        Service callback to disable raw image publishing.
+        :param request: request message
+        :param response: response message
+        :return: response to the service call.
+        """
         self.publishing_raw_image = False
         return response
 
     def enable_marker_img_pub(self, request, response):
+        """
+        Service callback to enable marker image publishing.
+        :param request: request message
+        :param response: response message
+        :return: response to the service call.
+        """
         self.publishing_marker_image = True
         return response
 
     def disable_marker_img_pub(self, request, response):
+        """
+        Service callback to disable marker image publishing.
+        :param request: request message
+        :param response: response message
+        :return: response to the service call.
+        """
         self.publishing_marker_image = False
         return response
 
     def enable_pose_estimation(self, request, response):
+        """
+        Service callback to enable marker pose publishing.
+        :param request: request message
+        :param response: response message
+        :return: response to the service call.
+        """
         self.estimating_pose = True
         return response
 
     def disable_pose_estimation(self, request, response):
+        """
+        Service callback to disable marker pose publishing.
+        :param request: request message
+        :param response: response message
+        :return: response to the service call.
+        """
         self.estimating_pose = False
         return response
 
 
 def main(args=None):
+    """
+    Main function of the program, sets path for the calibration matrix and dist coefficients and calls to initialize ROS
+    :param args: arguments passed to the program by ROS
+    :return: exit code
+    """
+
     # Initialize the rclpy library
     rclpy.init(args=args)
 
@@ -290,6 +354,8 @@ def main(args=None):
     # Shutdown the ROS client library for Python
     rclpy.shutdown()
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    exit(main())

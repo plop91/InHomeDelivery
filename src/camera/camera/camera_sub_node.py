@@ -1,14 +1,24 @@
+"""
+Camera subscriber Node
+Ian Sodersjerna
+"""
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 
-import rclpy  # Python library for ROS 2
-from rclpy.node import Node  # Handles the creation of nodes
-from sensor_msgs.msg import Image  # Image is the message type
-from cv_bridge import CvBridge  # Package to convert between ROS and OpenCV Images
-import cv2  # OpenCV library
+import cv2
 
 
 class ImageSubscriber(Node):
+    """
+    Image subscriber node
+    """
 
     def __init__(self):
+        """
+        Initialize subscriber node
+        """
         super().__init__('Camera_subscriber')
 
         # ROS Subscribers
@@ -22,16 +32,29 @@ class ImageSubscriber(Node):
         self.br = CvBridge()
 
     def listener_callback(self, data):
+        """
+        Listener callback, displays provided image.
+        :param data:
+        :return:
+        """
+
+        # Log that we got a message
         self.get_logger().info('Received image')
 
+        # convert from ROS format to cv2 format
         current_frame = self.br.imgmsg_to_cv2(data)
 
+        # display image
         cv2.imshow("camera", current_frame)
-
-        cv2.waitKey(1)
+        # cv2.waitKey(1)
 
 
 def main(args=None):
+    """
+    Main function of the program, initializes ROS.
+    :param args: arguments passed to the program by ROS
+    :return: exit code
+    """
     # Initialize the rclpy library
     rclpy.init(args=args)
 
@@ -47,6 +70,8 @@ def main(args=None):
     # Shutdown the ROS client library for Python
     rclpy.shutdown()
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    exit(main())
